@@ -145,16 +145,18 @@ Module greifen immer über die API auf Daten zu, nicht auf Parser-Code
 
 Viele Module benötigen keine Backend-Erweiterung — nur State.
 
-🧱 Zusammenfassung
+## Zusammenfassung
 
-Ein Modul besteht aus 5 Komponenten:
+Ein Modul besteht aus **5 Komponenten**:
 
-Teil	Ort	Funktion
-Dashboard-Buttons	/dashboard	Bedienung
-Redis-State	API / sendStateUpdate	Steuert Renderer
-JS-Modul	/renderer/modules	Grafiklogik
-HTML-Fragment	/renderer/index.html	Container
-CSS	/static/css	Darstellung
+| Teil              | Ort                    | Funktion         |
+|-------------------|------------------------|------------------|
+| Dashboard-Buttons | `/dashboard`           | Bedienung        |
+| Redis-State       | API / `sendStateUpdate`| Steuert Renderer |
+| JS-Modul          | `/renderer/modules`    | Grafiklogik      |
+| HTML-Fragment     | `/renderer/index.html` | Container        |
+| CSS               | `/static/css`          | Darstellung      |
+
 
 ➡️ Trennung von Logik, Layout und Daten ist Grundprinzip des Systems.
 ➡️ Jedes Modul ist eigenständig, erweiterbar und austauschbar.

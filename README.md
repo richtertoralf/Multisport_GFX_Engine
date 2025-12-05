@@ -1,129 +1,146 @@
-# Multisport_GFX_Engine
-Multisport GFX Engine
-
+# Multisport GFX Engine
 by SnowgamesLive
 
->Die Multisport GFX Engine ist ein universelles Grafiksystem zur Live-Darstellung von Sportwettkämpfen.
->Sie verbindet Daten aus unterschiedlichen Quellen mit modernen TV-Überblendungen und ermöglicht eine professionelle Präsentation – von Vereinsrennen bis hin zu großen Events.
+>Die Multisport GFX Engine ist ein universelles, modular aufgebautes Grafiksystem zur Live-Darstellung von Sportwettkämpfen.
+>Es verbindet Daten aus verschiedensten Zeitmess- und Schießstandsystemen mit modernen TV-Overlays und ermöglicht professionelle Grafiken – für Livestreams, Stadien und mobile Ansichten.
 
-Die Engine unterstützt mehrere Sportarten wie Skilanglauf, Biathlon, Skispringen, Nordic Combined, MTB und weitere Formate.
-Alle Grafiken folgen einem einheitlichen, klaren Design und können automatisch oder manuell gesteuert werden.
+Das System unterstützt mehrere Disziplinen wie Skilanglauf, Biathlon, Skispringen, Nordic Combined, MTB und weitere Formate.
+Alle Grafiken basieren auf einer einheitlichen Designsprache, werden aus einer zentralen Datenbank gespeist und lassen sich automatisch oder manuell steuern.
 
-Ziel ist ein einfach bedienbares, zuverlässiges und erweiterbares System, das hochwertige Echtzeit-Grafiken produziert und dabei flexibel genug bleibt, um in verschiedensten Szenarien eingesetzt zu werden – von Livestreams bis zur Videowall im Stadion.
-
-SnowgamesLive entwickelt diese Engine speziell für kleine und mittlere Veranstalter, die professionelle TV-Grafiken ohne große Produktionsstrukturen einsetzen möchten.
+## Ziel:
+Eine einfach bedienbare, zuverlässige und erweiterbare Plattform, die hochwertige Echtzeit-Grafiken erzeugt – speziell für kleine und mittlere Veranstalter ohne große TV-Infrastruktur.
 
 ---
 
 ## Systemarchitektur
 
-Die Engine besteht aus drei klar abgegrenzten Ebenen:
+Die Engine besteht aus drei klar getrennten Schichten:
 
-* Input Layer – Parser & Datenerfassung
-* Core Data Layer – Datenmodell & Redis
-* Output Layer – Dashboard, API & Renderer
+1. **Input Layer** – Parser & Datenerfassung
+2. **Core Data Layer** – Unified Model & Redis
+3. **Output Layer** – Dashboard, API & Renderer
 
-Diese Struktur ermöglicht hohe Flexibilität, einfache Erweiterbarkeit und Stabilität im Live-Betrieb.
+Diese Struktur sorgt für Stabilität im Live-Betrieb, minimale Kopplung der Module und maximale Erweiterbarkeit.
 
-### 1. Input Layer – Parser-Module
+### 1. Input Layer – Parser & Datenerfassung
 
-Alle externen Datenquellen werden über spezialisierte Parser in das interne Datenmodell übertragen.
-Jeder Parser ist ein eigenständiges Modul.
+Alle externen Datenquellen werden über unabhängige Parser-Module eingelesen.
+Jedes Modul ist vollständig isoliert und schreibt ausschließlich Daten in Redis.
 
 Unterstützte Parser
 
-* Startlist Parser
-* HoRa Shooting Parser
-* KES Shooting Parser
-* Uwe Brechenmacher Distance Parser (Skispringen)
+* Startlist Parser (Winlaufen, RaceResult)
+* HoRa Shooting Parser (Schießstand)
+* KES Shooting Parser (Kurvinen-System)
+* Uwe Brechenmacher Distance Parser (Skispringen/Weitenmessung)
 * WinLaufen / WinSpringen Parser
 * RaceResult Parser
 
 Aufgabe der Parser
 
-* Einlesen und Validieren externer Daten
-* Transformation in das interne Unified Sports Data Model
-* Schreiben der Daten in Redis
+* Einlesen externer Formate
+* Validierung und Fehlerbehandlung
+* Transformation in das Unified Sports Data Model
+* Schreiben strukturierter Redis-Keys
 
-Die Parser erzeugen ausschließlich Daten – keine Darstellung.
+Die Parser erzeugen keine Grafiken und enthalten keine sportliche Logik.
 
 ## 2. Core Data Layer – Unified Model & Redis
 Unified Sports Data Model
 
-Alle Parser schreiben in ein gemeinsames, sportartübergreifendes Datenmodell, bestehend aus u. a.:
+Alle Parser schreiben in ein sportartenübergreifendes Datenmodell.  
+Typische Redis-Strukturen:
 
-+ event:*
-+ athlete:*
-+ startlist:*
-+ timing:*
-+ shooting:*
-+ distance:*
-+ results:*
-+ sportspecific:* (Erweiterungen nach Disziplin)
-
-Dieses Modell bildet die Grundlage für sämtliche Ausgabekanäle.
++ event:* – Event-Metadaten
++ athlete:* – Stammdaten zu Athleten
++ startlist:* – Startlisten pro Klasse/Disziplin
++ timing:* – Zwischenzeiten, Runden, Passagezeiten
++ shooting:* – Trefferbilder, Schusszeiten, Serien
++ distance:* – Weiten und Landedaten
++ result:* – Endergebnisse, Ranglisten
++ sportspecific:* – Disziplinspezifische Erweiterungen (z. B. Strafzeiten, Nachlader, Ramp-Info)
 
 ### Redis – Single Source of Truth
 
-Redis dient als zentraler Datenspeicher für:
+Redis speichert alle Echtzeitdaten:
 
 * Event- und Athletendaten
 * Startlisten
-* Zwischenzeiten, Treffer, Weiten
-* Laufende Ranglisten
-* Systemmetriken
+* Zwischenzeiten, Lap-Daten
+* Schießdaten (Einzel und Bahnorientiert)
+* Weitenmessdaten
+* Laufende Ranglisten und Aggregationen
+* Systemmetriken / Monitoring
 * Grafikstatus (gfx:state)
 
-Alle Systeme im Output Layer greifen ausschließlich über API-Endpunkte auf Redis zu.
+Die gesamte Engine – Dashboard wie Renderer – arbeitet ausschließlich auf Basis dieser Redis-Daten.
 
 ## 3. Output Layer – Dashboard, API & Renderer
 
 ### Control Dashboard
+Die zentrale Bedienoberfläche der Engine.
 
-Das Dashboard ist die zentrale Bedienoberfläche der Engine.
+Hauptfunktionen:
 
-Funktionen:
+* Setzen und Aktualisieren des Grafikstatus (gfx:state)
+* Triggern von Overlays und automatischen Abläufen
+* Monitoring der Datenströme und Verfügbarkeit
+* Import von Startlisten (über Parser-Trigger)
+* Umschalten von Ansichten und Modulen
 
-* Setzen und Aktualisieren des Grafikstatus via gfx:state
-* Aktivieren/Deaktivieren einzelner Eingangskanäle
-* Importieren von Startlisten (über die Parser)
-* Live-Monitoring aller Datenquellen
-* Auswählen und Triggern von Grafiken
-
-Das Dashboard verarbeitet keine sportliche Logik und rechnet nichts; es steuert lediglich Zustände.
+**Wichtig:**
+Das Dashboard berechnet keine sportliche Logik – es steuert ausschließlich Zustände.
 
 ### API Layer
 
-Die Engine stellt eine einheitliche API bereit, über die alle Renderer Daten abrufen.
+Die Engine stellt eine REST-API bereit, über die alle Renderer Daten abrufen.
 
-Typische API-Endpunkte liefern:
+Typische Endpunkte liefern:
 
 * Eventinformationen
 * Athletendaten
-* Startlisten
-* Timingdaten
-* Schießdaten
-* Ergebnisse
-* den aktuellen Grafikstatus (gfx:state)
+* vollständige Startlisten
+* Timing-Daten
+* Shooting-Daten (Bahn- und Athletenmodell)
+* Ergebnisse und Rankings
+* aktuellen Grafikzustand (gfx:state)
+
+Die API abstrahiert Redis und stabilisiert damit den Zugriff für alle Frontends.
 
 ### Renderer
 
-Die Ausgabe der Daten erfolgt über spezialisierte Renderer:
+Die Visualisierung erfolgt über spezialisierte Render-Clients:
 
-* TV / Streaming Overlay Renderer
-(HTML/CSS/JS-basierte Grafiken für OBS, vMix, Webbrowser)
+#### TV / Streaming Overlay Renderer
+* HTML/CSS/JS-basierte Grafiken
+* Einbindung in OBS, vMix oder Browser (Osee/Blackmagic)
 
-* Videowall Renderer
-(Großformatige, animierte Darstellungen)
+#### Videowall Renderer
+* großformatige, stadionoptimierte Darstellungen
+* reduzierte Komplexität, hohe Lesbarkeit
 
-* Commentator Renderer
-(Zusatzinformationen und Detaildaten für Moderation & Analyse)
+#### Commentator Renderer
+* Live-Datenansicht für Moderation und Analyse
+* Detaildaten zu Athleten, Shooting, Splits
 
-* Mobile Renderer
-(Vereinfachte dynamische grafische Ansicht auf Smartphones/Tablets)
+#### Mobile Renderer
+* adaptive Ansicht für Smartphones/Tablets
+* Zuschauer- oder VIP-Ansicht möglich
 
-Alle Renderer beziehen ihre Daten aus der API und sind vollständig entkoppelt vom Input Layer.
+Alle Renderer sind vollständig entkoppelt und greifen nur über die API zu – niemals direkt auf Parser oder Logik.
 
 ## Ziel des Systems
+Die **Multisport GFX Engine** ist eine universelle, modular erweiterbare Plattform für Live-Sportgrafiken.
 
-Die Multisport GFX Engine soll eine einfach bedienbare, universelle und stabile Plattform für Live-Sportgrafiken bieten – unabhängig von Sportart, Veranstalter oder Datenquelle.
+Sie bietet:
+* klare Trennung aller Schichten
+* zuverlässige Echtzeitfähigkeit
+* hohe Bedienbarkeit
+* volle Sportarten-Unabhängigkeit
+* professionelle Darstellung ohne große Produktionsstrukturen
+
+Damit eignet sie sich ideal für:
+* Livestreaming (Social Media Kanäle)
+* TV-Produktion
+* Stadien / Videowalls
+* Veranstaltungen mit begrenztem Personal
